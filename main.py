@@ -34,10 +34,7 @@ model = init_chat_model("gpt-4.1-mini")
 new_article_message = """
         ##### news article to process #####
         - title: {title}
-        - summary: {summary}
         - article_field: {article_field}
-        - article_subdomain: {article_subdomain}
-        - places: {places}
         - article_body: {article_body}
     """
 
@@ -95,6 +92,19 @@ async def main():
 
 
 def init_llm_pipeline_for_topic(desk_prompt: str):
+    desk_prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", desk_prompt),
+            ("human", new_article_message)
+        ]
+    )
+
+    str_output_parser = StrOutputParser()
+
+    return desk_prompt_template | model | str_output_parser
+
+
+def init_llm_pipeline_for_classification(desk_prompt: str):
     desk_prompt_template = ChatPromptTemplate.from_messages(
         [
             ("system", desk_prompt),
