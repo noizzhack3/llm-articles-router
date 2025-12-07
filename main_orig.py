@@ -22,9 +22,6 @@ new_article_message = """
         ##### news article to process #####
         - title: {title}
         - summary: {summary}
-        - article_field: {article_field}
-        - article_subdomain: {article_subdomain}
-        - places: {places}
         - article_body: {article_body}
     """
 
@@ -58,7 +55,7 @@ tennis_desk_chain = tennis_desk_prompt_template | model | output_parser_tennis
 article = Article(**{"title": "Exciting Soccer Match in Madrid",
                      "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
                      "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race.",
-                     "article_field": "Sports",
+                     "article_domain": "Sports",
                      "article_subdomain": "Soccer",
                      "places": ["Madrid", "Spain"]})
 
@@ -86,7 +83,7 @@ async def main():
         {"title": "Exciting Soccer Match in Madrid",
          "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
          "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race.",
-         "article_field": "Sports",
+         "article_domain": "Sports",
          "article_subdomain": "Soccer",
          "places": ["Madrid", "Spain"]
          })
