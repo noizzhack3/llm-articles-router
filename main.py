@@ -3,7 +3,7 @@ import os
 from glob import glob
 from typing import Any
 
-from aio_pika import connect_robust
+from aio_pika import connect_robust, Message, DeliveryMode
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.output_parsers import StrOutputParser
@@ -51,9 +51,33 @@ article = Article(**{
 })
 
 
-async def handle_response(data: Any):
+async def handle_articles(data: Any):
     print(data)
     return data
+
+
+async def send_article_to_queue(article: Article):
+    """
+    send an article object to a queue
+    """
+    await init_rabbitmq()
+    print("\n--- Tool Execution: send_article_to_queue ---")
+    print(f"Article:\n {article.model_dump()}")
+    print("Sending article object to queue successful.")
+    print("------------------------------------------\n")
+
+    message = Message(
+        body=article.model_dump_json().encode(),
+        delivery_mode=DeliveryMode.PERSISTENT,  # Make the message durable
+        content_type='application/json'  # Inform consumers about content type
+    )
+
+    await exchange.publish(
+        message,
+        routing_key="test"
+    )
+
+    return "Article successfully sent to the queue."
 
 
 async def main():
@@ -106,9 +130,9 @@ def init_llm_pipeline():
         **desks_llm_pipelines
     )
 
-    extract_question = RunnableLambda(handle_response)
+    send_results = RunnableLambda(handle_articles)
 
-    result = parallel_processing_chain | extract_question
+    result = parallel_processing_chain | send_results
 
     return result
 
