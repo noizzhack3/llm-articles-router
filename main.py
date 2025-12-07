@@ -1,4 +1,5 @@
 import asyncio
+import os
 from glob import glob
 from typing import Any
 
@@ -30,11 +31,6 @@ async def init_rabbitmq():
 
 model = init_chat_model("gpt-4.1-mini")
 
-with open(
-        "c:/code_projects/llm-articles-router/prompts/eng/sports_desk_system_prompt.txt", 'r',
-        encoding='utf-8') as file:
-    sports_desk_system_prompt = file.read()
-
 new_article_message = """
         ##### news article to process #####
         - title: {title}
@@ -45,57 +41,19 @@ new_article_message = """
         - article_body: {article_body}
     """
 
-sports_desk_prompt_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", sports_desk_system_prompt),
-        ("human", new_article_message)
-    ]
-)
-
-with open(
-        "c:/code_projects/llm-articles-router/prompts/eng/tennis_desk_system_prompt.txt", 'r',
-        encoding='utf-8') as file:
-    tennis_desk_system_prompt = file.read()
-
-tennis_desk_prompt_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", sports_desk_system_prompt),
-        ("human", tennis_desk_system_prompt)
-    ]
-)
-
-output_parser_sports = StrOutputParser()
-output_parser_tennis = StrOutputParser()
-main_chain_parser = StrOutputParser()
-
-# router_chain = main_prompt | model | output_parser
-sports_desk_chain = sports_desk_prompt_template | model | output_parser_sports
-tennis_desk_chain = tennis_desk_prompt_template | model | output_parser_tennis
-
-article = Article(**{"title": "Exciting Soccer Match in Madrid",
-                     "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
-                     "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race.",
-                     "article_field": "Sports",
-                     "article_subdomain": "Soccer",
-                     "places": ["Madrid", "Spain"]})
-
-x = article.model_dump()
-
-parallel_processing_chain = RunnableParallel(
-    tennis_desk_chain=tennis_desk_chain,
-    sports_desk_chain=sports_desk_chain,
-    article=RunnablePassthrough()  # Pass through the original input as well
-)
+article = Article(**{
+    "title": "Exciting Soccer Match in Madrid",
+    "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
+    "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race.",
+    "article_field": "Sports",
+    "article_subdomain": "Soccer",
+    "places": ["Madrid", "Spain"]
+})
 
 
 async def handle_response(data: Any):
     print(data)
     return data
-
-
-extract_question = RunnableLambda(handle_response)
-
-main_processing_chain = parallel_processing_chain | extract_question
 
 
 async def main():
@@ -112,14 +70,50 @@ async def main():
     print(result)
 
 
-def init_llm_pipelines():
+def init_llm_pipeline_for_topic(desk_prompt: str):
+    desk_prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", desk_prompt),
+            ("human", new_article_message)
+        ]
+    )
+
+    str_output_parser = StrOutputParser()
+
+    return desk_prompt_template | model | str_output_parser
+
+
+def init_llm_pipeline():
     prompt_files = glob("C:\code_projects\llm-articles-router\prompts\eng\*.txt")
-    a = 12321
 
-def init_llm_pipeline_for_topic(topic: str, prompt:str):
+    desks_llm_pipelines: dict[str, Any] = {
+        "article": RunnablePassthrough()
+    }
+
+    for prompt_file in prompt_files:
+        desk_topic = os.path.basename(prompt_file).split('_')[0]
+
+        with open(
+                prompt_file,
+                'r',
+                encoding='utf-8') as file:
+            desk_prompt = file.read()
+
+            llm_pipeline_for_topic = init_llm_pipeline_for_topic(desk_prompt)
+            desks_llm_pipelines[f'{desk_topic}_desk'] = llm_pipeline_for_topic
+
+    parallel_processing_chain = RunnableParallel(
+        **desks_llm_pipelines
+    )
+
+    extract_question = RunnableLambda(handle_response)
+
+    result = parallel_processing_chain | extract_question
+
+    return result
 
 
+main_processing_chain = init_llm_pipeline()
 
 if __name__ == "__main__":
-    init_llm_pipelines()
     asyncio.run(main())
