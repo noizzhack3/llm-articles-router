@@ -33,17 +33,14 @@ model = init_chat_model("gpt-4.1-mini")
 
 new_article_message = """
         ##### news article to process #####
+        - article_id: {article_id}
+        - id: {id}
         - title: {title}
         - summary: {summary}
         - article_body: {article_body}
+        - author: {author}
+        - destination: {destination}
     """
-
-article = Article(
-    **{
-        "title": "Exciting Soccer Match in Madrid",
-        "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
-        "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race."
-    })
 
 
 async def handle_articles(data: Any):
@@ -78,9 +75,14 @@ async def send_article_to_queue(article_to_send: Article):
 async def main():
     result = await main_processing_chain.ainvoke(
         {
-            "title": "Exciting Soccer Victory in Barcelona",
-            "summary": "FC Barcelona triumphed over Real Madrid in a thrilling El Clásico match at Camp Nou, with Lionel Messi scoring the winning goal.",
-            "article_body": "In an electrifying El Clásico match held at Camp Nou, Barcelona, FC Barcelona secured a memorable victory against their long-time rivals Real Madrid. The game was marked by intense competition and spectacular plays. Lionel Messi shone brightly, scoring the decisive goal that sealed the win for Barcelona. The match drew passionate fans from around the globe, highlighting the enduring excitement and rivalry of Spanish football."})
+            "article_id": "f35ad5c5-120a-489a-8031-dd521b576ec7",
+            "id": "f35ad5c5-120a-489a-8031-dd521b576ec7",
+            "title": "Exciting Soccer Final in Madrid",
+            "summary": "Real Madrid wins the thrilling UEFA Champions League final held in Madrid.",
+            "article_body": "In an exhilarating UEFA Champions League final held in Madrid, Real Madrid claimed victory against Liverpool. The match, which took place at Santiago Bernabéu Stadium, saw standout performances from Karim Benzema and Vinícius Júnior, thrilling fans and securing the title for the Spanish giants.",
+            "author": "Brittany Johnson",
+            "destination": "Norman Morgan"
+        })
 
     print(result)
 
