@@ -1,11 +1,32 @@
+import asyncio
+from glob import glob
+from typing import Any
+
+from aio_pika import connect_robust
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 
 from dtos.article import Article
 
 load_dotenv()
+
+exchange = None
+
+
+async def init_rabbitmq():
+    global exchange
+
+    if exchange is None:
+        connection = await connect_robust("amqp://guest:guest@localhost/breaking_bed")
+        channel = await connection.channel()
+        exchange = await channel.declare_exchange(
+            "breaking_bed",
+            type="topic",
+            durable=True)
+
 
 model = init_chat_model("gpt-4.1-mini")
 
@@ -31,10 +52,25 @@ sports_desk_prompt_template = ChatPromptTemplate.from_messages(
     ]
 )
 
-output_parser = StrOutputParser()
+with open(
+        "c:/code_projects/llm-articles-router/prompts/eng/tennis_desk_system_prompt.txt", 'r',
+        encoding='utf-8') as file:
+    tennis_desk_system_prompt = file.read()
+
+tennis_desk_prompt_template = ChatPromptTemplate.from_messages(
+    [
+        ("system", sports_desk_system_prompt),
+        ("human", tennis_desk_system_prompt)
+    ]
+)
+
+output_parser_sports = StrOutputParser()
+output_parser_tennis = StrOutputParser()
+main_chain_parser = StrOutputParser()
 
 # router_chain = main_prompt | model | output_parser
-sports_desk_chain = sports_desk_prompt_template | model | output_parser
+sports_desk_chain = sports_desk_prompt_template | model | output_parser_sports
+tennis_desk_chain = tennis_desk_prompt_template | model | output_parser_tennis
 
 article = Article(**{"title": "Exciting Soccer Match in Madrid",
                      "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
@@ -45,12 +81,45 @@ article = Article(**{"title": "Exciting Soccer Match in Madrid",
 
 x = article.model_dump()
 
-out = sports_desk_chain.invoke(
-    {"title": "Exciting Soccer Match in Madrid",
-     "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
-     "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race.",
-     "article_field": "Sports",
-     "article_subdomain": "Soccer",
-     "places": ["Madrid", "Spain"]
-     })
-print(out)
+parallel_processing_chain = RunnableParallel(
+    tennis_desk_chain=tennis_desk_chain,
+    sports_desk_chain=sports_desk_chain,
+    article=RunnablePassthrough()  # Pass through the original input as well
+)
+
+
+async def handle_response(data: Any):
+    print(data)
+    return data
+
+
+extract_question = RunnableLambda(handle_response)
+
+main_processing_chain = parallel_processing_chain | extract_question
+
+
+async def main():
+    result = await main_processing_chain.ainvoke(
+        {
+            "title": "Exciting Soccer Match in Madrid",
+            "summary": "Real Madrid clinched a thrilling 3-2 victory against Barcelona in the El Clásico match.",
+            "article_body": "In an electrifying El Clásico held in Madrid, Real Madrid defeated Barcelona 3-2 on April 20, 2024. The match saw standout performances from Karim Benzema, who scored twice, and Vinícius Júnior. The victory boosts Real Madrid's chances in the La Liga championship race.",
+            "article_field": "Sports",
+            "article_subdomain": "Soccer",
+            "places": ["Madrid", "Spain"]
+        })
+
+    print(result)
+
+
+def init_llm_pipelines():
+    prompt_files = glob("C:\code_projects\llm-articles-router\prompts\eng\*.txt")
+    a = 12321
+
+def init_llm_pipeline_for_topic(topic: str, prompt:str):
+
+
+
+if __name__ == "__main__":
+    init_llm_pipelines()
+    asyncio.run(main())
