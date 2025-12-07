@@ -51,18 +51,18 @@ async def handle_articles(data: Any):
     return data
 
 
-async def send_article_to_queue(article: Article):
+async def send_article_to_queue(article_to_send: Article):
     """
     send an article object to a queue
     """
     await init_rabbitmq()
     print("\n--- Tool Execution: send_article_to_queue ---")
-    print(f"Article:\n {article.model_dump()}")
+    print(f"Article:\n {article_to_send.model_dump()}")
     print("Sending article object to queue successful.")
     print("------------------------------------------\n")
 
     message = Message(
-        body=article.model_dump_json().encode(),
+        body=article_to_send.model_dump_json().encode(),
         delivery_mode=DeliveryMode.PERSISTENT,  # Make the message durable
         content_type='application/json'  # Inform consumers about content type
     )
@@ -112,7 +112,7 @@ def init_llm_pipeline_for_classification(desk_prompt: str):
 
 
 def init_llm_pipeline():
-    prompt_files = glob("C:\code_projects\llm-articles-router\prompts\eng\*.txt")
+    prompt_files = glob(r"C:\code_projects\llm-articles-router\prompts\eng\*.txt")
 
     desks_llm_pipelines: dict[str, Any] = {
         "article": RunnablePassthrough()

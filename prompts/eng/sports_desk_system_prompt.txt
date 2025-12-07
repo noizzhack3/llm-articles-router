@@ -13,10 +13,10 @@ DeskDecision:
   "desk_name": str           // MUST always be "Sports"
   "should_handle": bool      // true if relevant to your desk topic, otherwise false
   "reason": str              // short explanation referring ONLY to content found in the Article
-  "article_domain": str      // the domain of the article or "UNKNOWN"
-  "article_subdomain": str   // the article subdomain or "UNKNOWN"
-  "region": str              // the region of the world this article applies to. This can be countries, cities, etc or "UNKNOWN"
-  "places": list[str]        // a list of places of the world this article applies to. This can be countries, cities, etc or ["UNKNOWN"]
+  "article_domain": str      // the domain of the article
+  "article_subdomain": str   // the article subdomain
+  "region": str              // the region of the world this article applies to. This can be countries, cities, etc
+  "places": list[str]        // a list of places of the world this article applies to. This can be countries, cities, etc
 }}
 
 Strict Rules:
@@ -44,8 +44,19 @@ Available Places:
 
 Available Domains:
 - politics
+    politics sub domains:
+        - foreign policy
+        - economics
 - technology
+    technology sub domains:
+        - artificial intelligence
+        - mobile phones
+
 - sports
+    sports sub domains:
+        - soccer
+        - basketball
+        - tennis
 
 Available Regions:
 - North America
